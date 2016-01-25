@@ -1,0 +1,149 @@
+{
+  "name": "efm32pg-stk-gcc",
+  "version": "0.1.0",
+  "description": "GCC target description for the SLSTK3401A Starter Kit for EFM32PG1B.",
+  "licenses": [
+    {
+      "url": "https://spdx.org/licenses/Apache-2.0",
+      "type": "Apache-2.0"
+    }
+  ],
+  "inherits": {
+    "mbed-gcc": "~0.1.0"
+  },
+  "keywords": [
+    "mbed-target:efm32pg-stk",
+    "mbed-official",
+    "efm32pg",
+    "efm32pg-stk",
+    "gcc"
+  ],
+  "similarTo": [
+    "silabs",
+    "efm32",
+    "efm32pg",
+    "efm32pg-stk",
+    "cortex-m4",
+    "armv7-m",
+    "arm",
+    "gcc"
+  ],
+  "config": {
+    "minar": {
+      "initial_event_pool_size": 10,
+      "additional_event_pools_size": 10
+    },
+    "cmsis": {
+      "nvic": {
+        "has-vtor": true,
+        "ram_vector_address": "(&__start_vector_table__)",
+        "flash_vector_address": "0x0",
+        "user_irq_offset": 16,
+        "user_irq_number": 34
+      }
+    },
+    "uvisor": {
+      "present": false
+    },
+    "mbed-os": {
+      "stdio": {
+        "default-baud": 115200
+      }
+    },
+    "hardware": {
+      "clock": {
+        "core": {
+          "source": "HFXO",
+          "frequency": 40000000
+        },
+        "low-energy": {
+          "source": "LFXO",
+          "frequency": 32768
+        }
+      },
+      "pins": {
+        "LED0": "PF4",
+        "LED1": "PF5",
+        "LED2": "LED0",
+        "LED3": "LED0",
+        "LED4": "LED1",
+        "SW0": "PF6",
+        "SW1": "PF7",
+        "BTN0": "SW0",
+        "BTN1": "SW1",
+        "I2C_SDA": "PC10",
+        "I2C_SCL": "PC11",
+        "SPI_MOSI": "PC6",
+        "SPI_MISO": "PC7",
+        "SPI_CLK": "PC8",
+        "SPI_CS": "PC9",
+        "UART_TX": "PD10",
+        "UART_RX": "PD11",
+        "SERIAL_TX": "PD10",
+        "SERIAL_RX": "PD11",
+        "STDIO_UART_TX": "PA0",
+        "STDIO_UART_RX": "PA1",
+        "USBTX": "PA0",
+        "USBRX": "PA1",
+        "EFM_BC_EN": "PA5"
+      }
+    },
+    "modules": {
+      "analogin": {
+        "size": 1
+      },
+      "analogout": {
+        "size": 1
+      },
+      "gpio": {
+        "size": 1
+      },
+      "i2c": {
+        "size": 1
+      },
+      "pwmout": {
+        "size": 1
+      },
+      "serial": {
+        "size": 3,
+        "stdio-uart": "USART0"
+      },
+      "spi": {
+        "size": 2,
+        "transaction-queue-size": 2
+      }
+    }
+  },
+  "toolchain": "CMake/toolchain.cmake",
+  "debug-server": [
+    "JLinkGDBServer",
+    "-if",
+    "SWD",
+    "-speed",
+    "4000",
+    "-device",
+    "EFM32PG1B200F256GM48",
+    "-log",
+    "/tmp/jlink-efm.log"
+  ],
+  "scripts": {
+    "debug": [
+      "arm-none-eabi-gdb",
+      "$program",
+      "--eval",
+      "target remote localhost:2331",
+      "-ex",
+      "mon device EFM32PG1B200F256GM48",
+      "-ex",
+      "mon flash download 1",
+      "-ex",
+      "mon SWO Start 0 875000Hz"
+    ],
+    "test": [
+      "mbed_test_wrapper",
+      "--target",
+      "EFM32PG_STK3401",
+      "$program"
+    ]
+  }
+}
