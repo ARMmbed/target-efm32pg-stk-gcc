@@ -56,13 +56,41 @@ ENTRY(Reset_Handler)
 
 SECTIONS
 {
+  /* ensure that uvisor bss is at the beginning of memory */
+  .uvisor.bss (NOLOAD):
+  {
+    . = ALIGN(32);
+    __uvisor_bss_start = .;
+
+    /* protected uvisor main bss */
+    . = ALIGN(32);
+    __uvisor_bss_main_start = .;
+    KEEP(*(.keep.uvisor.bss.main))
+    . = ALIGN(32);
+    __uvisor_bss_main_end = .;
+
+    /* protected uvisor secure boxes bss */
+    . = ALIGN(32);
+    __uvisor_bss_boxes_start = .;
+    KEEP(*(.keep.uvisor.bss.boxes))
+    . = ALIGN(32);
+    *("dma")
+    __uvisor_bss_boxes_end = .;
+
+    . = ALIGN(1 << LOG2CEIL(__uvisor_bss_boxes_end - __uvisor_bss_start));
+    __uvisor_bss_end = .;
+  } > RAM
+
   .text :
   {
     KEEP(*(.vectors))
-    __Vectors_End = .;
-    __Vectors_Size = __Vectors_End - __Vectors;
-    __end__ = .;
-
+    
+    /* uVisor code and data */
+    . = 0x100;
+    . = ALIGN(4);
+    __uvisor_main_start = .;
+    *(.uvisor.main)
+    __uvisor_main_end = .;
     *(.text*)
 
     KEEP(*(.init))
@@ -99,52 +127,31 @@ SECTIONS
   } > FLASH
   __exidx_end = .;
 
-  /* To copy multiple ROM to RAM sections,
-   * uncomment .copy.table section and,
-   * define __STARTUP_COPY_MULTIPLE in startup_ARMCMx.S */
-  /*
-  .copy.table :
+  /* .stack section doesn't contains any symbols. It is only
+   * used for linker to reserve space for the main stack section
+   * WARNING: .stack should come immediately after the last secure memory
+   * section.  This provides stack overflow detection. */
+  .stack (NOLOAD):
   {
-    . = ALIGN(4);
-    __copy_table_start__ = .;
-    LONG (__etext)
-    LONG (__data_start__)
-    LONG (__data_end__ - __data_start__)
-    LONG (__etext2)
-    LONG (__data2_start__)
-    LONG (__data2_end__ - __data2_start__)
-    __copy_table_end__ = .;
-  } > FLASH
-  */
+    __StackLimit = .;
+    *(.stack*);
+    . += 0x1000 - (. - __StackLimit);
+  } > RAM
 
-  /* To clear multiple BSS sections,
-   * uncomment .zero.table section and,
-   * define __STARTUP_CLEAR_BSS_MULTIPLE in startup_ARMCMx.S */
-  /*
-  .zero.table :
+  __StackTop = ADDR(.stack) + SIZEOF(.stack);
+  __StackLimit = ADDR(.stack);
+  PROVIDE(__stack = __StackTop);
+
+  .data :
   {
-    . = ALIGN(4);
-    __zero_table_start__ = .;
-    LONG (__bss_start__)
-    LONG (__bss_end__ - __bss_start__)
-    LONG (__bss2_start__)
-    LONG (__bss2_end__ - __bss2_start__)
-    __zero_table_end__ = .;
-  } > FLASH
-  */
+    PROVIDE( __etext = LOADADDR(.data) );
 
-  __etext = .;
-
-  .data : AT (__etext)
-  {
     __data_start__ = .;
     PROVIDE( __start_vector_table__ = .);
     . += __vector_size;
     PROVIDE( __end_vector_table__ = .);
     *(vtable)
     *(.data*)
-    . = ALIGN (4);
-    *(.ram)
 
     . = ALIGN(4);
     /* preinit data */
@@ -166,14 +173,38 @@ SECTIONS
     KEEP(*(.fini_array))
     PROVIDE_HIDDEN (__fini_array_end = .);
 
-    KEEP(*(.jcr*))
     . = ALIGN(4);
     /* All data end */
+    . = ALIGN(32);
     __data_end__ = .;
 
-  } > RAM
+  } > RAM AT>FLASH
 
-  .bss :
+  /* uvisor configuration data */
+  .uvisor.secure :
+  {
+    . = ALIGN(32);
+    __uvisor_secure_start = .;
+
+    /* uvisor secure boxes configuration tables */
+    . = ALIGN(32);
+    __uvisor_cfgtbl_start = .;
+    KEEP(*(.keep.uvisor.cfgtbl))
+    . = ALIGN(32);
+    __uvisor_cfgtbl_end = .;
+
+    /* pointers to uvisor secure boxes configuration tables */
+    /* note: no further alignment here, we need to have the exact list of pointers */
+    __uvisor_cfgtbl_ptr_start = .;
+    KEEP(*(.keep.uvisor.cfgtbl_ptr_first))
+    KEEP(*(.keep.uvisor.cfgtbl_ptr))
+    __uvisor_cfgtbl_ptr_end = .;
+
+    . = ALIGN(32);
+    __uvisor_secure_end = .;
+  } >FLASH
+  
+  .bss (NOLOAD):
   {
     . = ALIGN(4);
     __bss_start__ = .;
@@ -183,37 +214,21 @@ SECTIONS
     __bss_end__ = .;
   } > RAM
 
-  .heap (COPY):
+  .heap (NOLOAD):
   {
-    __HeapBase = .;
     __end__ = .;
     end = __end__;
-    _end = __end__;
-    KEEP(*(.heap*))
+    *(.heap*);
+    . += (ORIGIN(RAM) + LENGTH(RAM) - .);
     __HeapLimit = .;
   } > RAM
-
-  /* .stack_dummy section doesn't contains any symbols. It is only
-   * used for linker to calculate size of stack sections, and assign
-   * values to stack symbols later */
-  .stack_dummy (COPY):
-  {
-    KEEP(*(.stack*))
-  } > RAM
-
-  /* Set stack top to end of RAM, and stack limit move down by
-   * size of stack_dummy section */
-  __StackTop = ORIGIN(RAM) + LENGTH(RAM);
-  __StackLimit = __StackTop - SIZEOF(.stack_dummy);
-  PROVIDE(__stack = __StackTop);
-
   PROVIDE(__heap_size = SIZEOF(.heap));
   PROVIDE(__mbed_sbrk_start = ADDR(.heap));
   PROVIDE(__mbed_krbs_start = ADDR(.heap) + SIZEOF(.heap));
-  
-  /* Check if data + heap + stack exceeds RAM limit */
-  ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
+    
+  /* heap limit is all the available memory, */
+  __heap_end = ORIGIN(RAM) + LENGTH(RAM);
 
-  /* Check if FLASH usage exceeds FLASH size */
-  ASSERT( LENGTH(FLASH) >= (__etext + SIZEOF(.data)), "FLASH memory overflowed !")
+  /* Check if data + heap + stack exceeds RAM limit */
+  ASSERT(__end__ <= __heap_end, "region RAM overflowed with stack")
 }
