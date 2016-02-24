@@ -1,6 +1,6 @@
 {
   "name": "efm32pg-stk-gcc",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "GCC target description for the SLSTK3401A Starter Kit for EFM32PG1B.",
   "licenses": [
     {
