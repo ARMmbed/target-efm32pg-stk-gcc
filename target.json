@@ -24,9 +24,7 @@
     "efm32pg",
     "efm32pg-stk",
     "cortex-m4",
-    "armv7-m",
-    "arm",
-    "gcc"
+    "armv7-m"
   ],
   "config": {
     "minar": {
@@ -51,6 +49,8 @@
       }
     },
     "hardware": {
+      "flash-size": 256,
+      "ram-size": 32,
       "clock": {
         "core": {
           "source": "HFXO",

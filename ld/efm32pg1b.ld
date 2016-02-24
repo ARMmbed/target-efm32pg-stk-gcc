@@ -229,6 +229,12 @@ SECTIONS
   /* heap limit is all the available memory, */
   __heap_end = ORIGIN(RAM) + LENGTH(RAM);
 
+  /* Provide physical memory boundaries for uVisor. */
+  __uvisor_flash_start = ORIGIN(FLASH);
+  __uvisor_flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
+  __uvisor_sram_start = ORIGIN(RAM);
+  __uvisor_sram_end = ORIGIN(RAM) + LENGTH(RAM);
+  
   /* Check if data + heap + stack exceeds RAM limit */
   ASSERT(__end__ <= __heap_end, "region RAM overflowed with stack")
 }
