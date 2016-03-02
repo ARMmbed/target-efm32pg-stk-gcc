@@ -1,54 +1,22 @@
 {
   "name": "efm32pg-stk-gcc",
   "version": "0.2.0",
-  "description": "GCC target description for the SLSTK3401A Starter Kit for EFM32PG1B.",
-  "licenses": [
-    {
-      "url": "https://spdx.org/licenses/Apache-2.0",
-      "type": "Apache-2.0"
-    }
-  ],
+  "description": "GCC target description for the SLSTK3401A Starter Kit for EFM32PG1.",
+  "license": "Apache-2.0",
   "inherits": {
-    "mbed-gcc": "^1.0.0"
+    "efm32pg-gcc": "^1.0.0"
   },
   "keywords": [
     "mbed-target:efm32pg-stk",
     "mbed-official",
-    "efm32pg",
-    "efm32pg-stk",
-    "gcc"
+    "efm32pg-stk"
   ],
   "similarTo": [
-    "silabs",
-    "efm32",
-    "efm32pg",
-    "efm32pg-stk",
-    "cortex-m4",
-    "armv7-m"
+    "efm32pg-stk"
   ],
   "config": {
-    "minar": {
-      "initial_event_pool_size": 10,
-      "additional_event_pools_size": 10
-    },
-    "cmsis": {
-      "nvic": {
-        "has-vtor": true,
-        "ram_vector_address": "(&__start_vector_table__)",
-        "flash_vector_address": "0x0",
-        "user_irq_offset": 16,
-        "user_irq_number": 34
-      }
-    },
-    "uvisor": {
-      "present": false
-    },
-    "mbed-os": {
-      "stdio": {
-        "default-baud": 115200
-      }
-    },
     "hardware": {
+      "device": "EFM32PG1B200F256GM48",
       "flash-size": 256,
       "ram-size": 32,
       "clock": {
@@ -89,43 +57,11 @@
       }
     },
     "modules": {
-      "analogin": {
-        "size": 1
-      },
-      "analogout": {
-        "size": 1
-      },
-      "gpio": {
-        "size": 1
-      },
-      "i2c": {
-        "size": 1
-      },
-      "pwmout": {
-        "size": 1
-      },
       "serial": {
-        "size": 3,
         "stdio-uart": "USART0"
-      },
-      "spi": {
-        "size": 2,
-        "transaction-queue-size": 2
       }
     }
   },
-  "toolchain": "CMake/toolchain.cmake",
-  "debug-server": [
-    "JLinkGDBServer",
-    "-if",
-    "SWD",
-    "-speed",
-    "4000",
-    "-device",
-    "EFM32PG1B200F256GM48",
-    "-log",
-    "/tmp/jlink-efm.log"
-  ],
   "scripts": {
     "debug": [
       "arm-none-eabi-gdb",
